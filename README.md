@@ -8,7 +8,7 @@ TypeScript to JsonSchema Transpiler
 
 ```typescript
 import {resolve} from 'path';
-import {generateSchema} from '@max-team/typescript-to-json-schema';
+import {generateSchema} from '@hoth/typescript-to-json-schema';
 
 const {schemas} = generateSchema([resolve('demo.ts')]);
 ```
@@ -20,7 +20,7 @@ For example
 `company.ts`：
 
 ```typescript
-import { integer } from "@max-team/typescript-to-json-schema";
+import { integer } from "@hoth/typescript-to-json-schema";
 
 type employee = {
 
