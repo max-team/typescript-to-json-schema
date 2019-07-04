@@ -6,7 +6,7 @@ TypeScript to JsonSchema Transpiler
 
 ### Programmatic use
 
-```
+```typescript
 import {resolve} from 'path';
 import {generateSchema} from '@max-team/typescript-to-json-schema';
 
