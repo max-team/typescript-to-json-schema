@@ -1,4 +1,7 @@
-# `typescript-to-json-schema`
+# typescript-to-json-schema
+
+![Language](https://img.shields.io/badge/-TypeScript-blue.svg)
+[![npm package](https://img.shields.io/npm/v/ts2php.svg)](https://www.npmjs.org/package/@hoth/typescript-to-json-schema)
 
 TypeScript to JsonSchema Transpiler
 
