@@ -15,7 +15,9 @@ import {
     TypeGuards,
     SourceFile,
     TypeAliasDeclaration,
-    ArrayTypeNode
+    ArrayTypeNode,
+    LiteralTypeNode,
+    IndexedAccessTypeNode
 } from "ts-morph";
 
 import { omit } from 'lodash';
@@ -41,6 +43,11 @@ export function getRequired (node: InterfaceDeclaration | TypeLiteralNode): stri
         return required;
     }
 }
+
+const getLiteralTypeValue = (node: LiteralTypeNode) => {
+    const text = node.getText();
+    return JSON.parse(/^'/.test(text) ? text.replace(/"/g, '\\"').replace(/(^'|'$)/g, '"').replace(/\\'/g, '\'') : text);
+};
 
 export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state: CompilerState): object | undefined {
     switch (node.getKind()) {
@@ -75,7 +82,7 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
             const types = (node as UnionTypeNode).getTypeNodes();
             if (types.every(t => TypeGuards.isLiteralTypeNode(t))) {
                 return {
-                    enum: types.map(t => JSON.parse(t.getText()))
+                    enum: types.map(getLiteralTypeValue)
                 };
             }
             return {
@@ -86,6 +93,20 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
             return {
                 type: 'array',
                 items: getTypeNodeSchema((node as ArrayTypeNode).getElementTypeNode(), sourceFile, state)
+            };
+        }
+        case ts.SyntaxKind.IndexedAccessType: {
+            const objectType = (node as IndexedAccessTypeNode).getObjectTypeNode();
+            let accesses = [(node as IndexedAccessTypeNode).getIndexTypeNode()] as LiteralTypeNode[];
+            let identifier = objectType
+            while (TypeGuards.isIndexedAccessTypeNode(objectType)) {
+                identifier = objectType.getObjectTypeNode();
+                accesses.push(objectType.getIndexTypeNode() as LiteralTypeNode)
+            }
+            // @ts-ignore
+            const { $ref } = getTypeNodeSchema(identifier, sourceFile, state);
+            return {
+                $ref: `${$ref}${accesses.map(a => '/properties/' + getLiteralTypeValue(a))}`
             };
         }
         default:
@@ -145,6 +166,9 @@ function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} 
             }
         });
     }
+    if (tags.enumNames) {
+        tags.enumNames = JSON.parse(tags.enumNames);
+    }
     return { ...mergedSchema, ...omit(tags, [...numberAttrs, ...stringAttrs, ...arrayAttrs]) };
 }
 
@@ -153,6 +177,9 @@ export function getProperties (node: InterfaceDeclaration | TypeLiteralNode, sou
         const name = property.getName();
         const typeNode = property.getTypeNodeOrThrow();
         const tags = getJsDocTags(property);
+        if ('ignore' in tags) {
+            return prev;
+        }
         const schema = mergeTags(getTypeNodeSchema(typeNode, sourceFile, state), tags);
         return {
             ...prev,

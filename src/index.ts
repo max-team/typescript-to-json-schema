@@ -26,6 +26,7 @@ export type integer = number;
 
 export interface GenerateSchemaOption {
     getId(filePath: string): string;
+    getRootName?: (filePath: string) => string;
     tsConfigFilePath?: string;
     baseUrl?: string;
 }
@@ -45,6 +46,7 @@ export function generateSchema(files: string[], options: GenerateSchemaOption): 
 
     const {
         getId,
+        getRootName = filePath => basename(filePath, '.ts').toLowerCase(),
         tsConfigFilePath,
         baseUrl = 'http://www.baidu.com/schemas'
     } = options;
@@ -53,7 +55,7 @@ export function generateSchema(files: string[], options: GenerateSchemaOption): 
         tsConfigFilePath
     });
 
-    const state = {getId};
+    const state = { getId };
 
     const sourceFiles = project.addExistingSourceFiles(files);
     project.resolveSourceFileDependencies();
@@ -63,33 +65,43 @@ export function generateSchema(files: string[], options: GenerateSchemaOption): 
     for (const sourceFile of sourceFiles) {
 
         const filePath = sourceFile.getFilePath();
-        const fileName = basename(filePath, '.ts');
+        const rootName = getRootName(filePath);
         let definitions: {[name: string]: object} = {};
 
-        const interfaces = sourceFile.getInterfaces();
-        definitions = interfaces.reduce(
-            (prev, node) => ({
-                ...prev,
-                [node.getName().toLowerCase()]: processInterface(node, sourceFile, state)
-            }),
-            definitions
-        );
+        try {
+            const interfaces = sourceFile.getInterfaces();
+            definitions = interfaces.reduce(
+                (prev, node) => ({
+                    ...prev,
+                    [node.getName().toLowerCase()]: processInterface(node, sourceFile, state)
+                }),
+                definitions
+            );
 
-        const typeAliases = sourceFile.getTypeAliases();
-        definitions = typeAliases.reduce(
-            (prev, node) => ({
-                ...prev,
-                [node.getName().toLowerCase()]: processTypeAlias(node, sourceFile, state)
-            }),
-            definitions
-        );
+            const typeAliases = sourceFile.getTypeAliases();
+            definitions = typeAliases.reduce(
+                (prev, node) => ({
+                    ...prev,
+                    [node.getName().toLowerCase()]: processTypeAlias(node, sourceFile, state)
+                }),
+                definitions
+            );
+        }
+        catch (e) {
+            console.error(`${filePath} generate error! ${e.stack}`);
+            return { schemas: {} };
+        }
+
+        if (Object.keys(definitions).length <= 0) {
+            continue;
+        }
 
         const id = getId(filePath);
 
         schemas[id] = {
             '$schema': 'http://json-schema.org/draft-07/schema#',
             '$id': `${baseUrl}${baseUrl && !/\/$/.test(baseUrl) ? '/' : ''}${id}`,
-            '$ref': `#/definitions/${fileName.toLowerCase()}`,
+            '$ref': definitions[rootName] ? `#/definitions/${rootName}` : undefined,
             definitions
         };
     }
@@ -115,7 +127,7 @@ export function mergeSchemas(schemas: SchemaList) {
                 ...a.properties,
                 ...b.properties
             };
-            a.properties && Object.keys(a.properties).forEach(key => {
+            b.properties && a.properties && Object.keys(a.properties).forEach(key => {
                 if (b.properties[key]) {
                     ret.properties[key] = mergeSchema(a.properties[key], b.properties[key]);
                 }
@@ -141,7 +153,6 @@ export function mergeSchemas(schemas: SchemaList) {
             ret = mergeSchema(omit(element, '$ref'), getSchema(element.$ref, id, schemas));
         }
         if (element.anyOf) {
-            console.log(walk(element.anyOf[0], id, schemas));
             ret = mergeSchema(omit(ret, 'anyOf'), walk(element.anyOf[0], id, schemas));
             for (let i = 1; i < element.anyOf.length; i++) {
                 ret = mergeSchema(ret, walk(element.anyOf[i], id, schemas))
@@ -165,7 +176,12 @@ export function mergeSchemas(schemas: SchemaList) {
     for (const id in schemas) {
         if (schemas.hasOwnProperty(id)) {
             const element = schemas[id];
-            ret[id] = walk(schemas[id], id, schemas);
+            try {
+                ret[id] = walk(schemas[id], id, schemas);
+            }
+            catch (e) {
+                console.error(`merge ${id} failed! ${e.stack}`);
+            }
             if (element.$ref) {
                 delete ret[id].definitions;
             }
