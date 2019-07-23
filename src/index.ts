@@ -115,7 +115,9 @@ interface SchemaList {
     [id: string]: Schema
 }
 
-export function mergeSchemas(schemas: SchemaList) {
+export function mergeSchemas(schemas: SchemaList, options: { mergeAnyOf?: boolean }) {
+
+    const { mergeAnyOf = true } = options;
 
     function mergeSchema(a: Schema, b: Schema): Schema {
         const ret = {...a, ...b};
@@ -152,7 +154,7 @@ export function mergeSchemas(schemas: SchemaList) {
         if (element.$ref) {
             ret = mergeSchema(omit(element, '$ref'), getSchema(element.$ref, id, schemas));
         }
-        if (element.anyOf) {
+        if (element.anyOf && mergeAnyOf) {
             ret = mergeSchema(omit(ret, 'anyOf'), walk(element.anyOf[0], id, schemas));
             for (let i = 1; i < element.anyOf.length; i++) {
                 ret = mergeSchema(ret, walk(element.anyOf[i], id, schemas))
