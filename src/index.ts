@@ -165,7 +165,7 @@ export function mergeSchemas(schemas: SchemaList, options: { mergeAnyOf?: boolea
                 if (isPlainObject(element[key])) {
                     ret[key] = walk(element[key], id, schemas);
                 }
-                if (isArray(element[key]) && ['oneOf', 'anyOf'].includes(key)) {
+                if (isArray(element[key]) && ['oneOf', 'anyOf', 'allOf'].includes(key)) {
                     ret[key] = element[key].map(e => isPlainObject(e) && walk(e, id, schemas));
                 }
             }
