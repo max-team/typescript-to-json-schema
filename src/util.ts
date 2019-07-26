@@ -247,5 +247,8 @@ export function processTypeAlias (node: TypeAliasDeclaration, sourceFile: Source
     const typeNode = node.getTypeNode();
     const tags = getJsDocTags(node);
     const schema = mergeTags(getTypeNodeSchema(typeNode, sourceFile, state), tags);
-    return schema;
+    return {
+        ...schema,
+        description: getDescription(node)
+    };
 }
