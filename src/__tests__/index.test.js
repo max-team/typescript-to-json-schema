@@ -24,7 +24,7 @@ describe('typescript-json-schema', () => {
     const image = schemas['image.json'];
     const company = schemas['company.json'];
 
-    console.log(JSON.stringify(company, null, 2));
+    console.log(JSON.stringify(image, null, 2));
 
     it('$schema & $id & $ref', function () {
         expect(image.$schema).toBe('http://json-schema.org/draft-07/schema#');
@@ -45,6 +45,24 @@ describe('typescript-json-schema', () => {
             }],
             description: '是否开始'
         });
+    });
+
+    it('oneOf', function () {
+        expect(image.definitions.timg.anyOf[1].properties.params.properties.cuttype).toEqual({
+            oneOf: [
+              {
+                type: 'integer',
+                minimum: 1,
+                maximum: 8,
+                default: 8
+              },
+              {
+                type: 'string',
+                pattern: '^([bpwhfu][\\\\d_]+|[1-8])$'
+              }
+            ],
+            description: '图片裁剪参数，默认为8'
+          });
     });
 
     it('array', function () {

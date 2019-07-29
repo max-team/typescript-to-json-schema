@@ -28,6 +28,24 @@ export interface CompilerState {
     getId(filePath: string): string;
 }
 
+interface ObjectProperties {
+    [key: string]: Schema;
+}
+
+export interface Schema {
+    type?: string;
+    anyOf?: Schema[];
+    allOf?: Schema[];
+    oneOf?: Schema[];
+    $ref?: string;
+    properties?: ObjectProperties,
+    required?: string[];
+    const?: string | boolean | number;
+    format?: string;
+    enum?: (string | number)[];
+    items?: Schema;
+}
+
 export function getDescription (node: JSDocableNode) {
     const jsdocs = node.getJsDocs();
     if (jsdocs.length > 0) {
@@ -49,7 +67,7 @@ const getLiteralTypeValue = (node: LiteralTypeNode) => {
     return JSON.parse(/^'/.test(text) ? text.replace(/"/g, '\\"').replace(/(^'|'$)/g, '"').replace(/\\'/g, '\'') : text);
 };
 
-export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state: CompilerState): object | undefined {
+export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state: CompilerState): Schema {
     switch (node.getKind()) {
         case ts.SyntaxKind.LiteralType:
             return { const: JSON.parse(node.getText()) };
@@ -87,6 +105,12 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
             }
             return {
                 oneOf: types.map(t => getTypeNodeSchema(t, sourceFile, state))
+            };
+        }
+        case ts.SyntaxKind.IntersectionType: {
+            const types = (node as UnionTypeNode).getTypeNodes();
+            return {
+                allOf: types.map(t => getTypeNodeSchema(t, sourceFile, state))
             };
         }
         case ts.SyntaxKind.ArrayType: {
@@ -134,6 +158,9 @@ function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} 
     if (mergedSchema.oneOf) {
         mergedSchema.oneOf = mergedSchema.oneOf.map(s => mergeTags(s, tags));
     }
+    if (mergedSchema.allOf) {
+        mergedSchema.allOf = mergedSchema.allOf.map(s => mergeTags(s, tags));
+    }
     const numberAttrs = ['minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum', 'default', 'example'];
     const stringAttrs = ['minLength', 'maxLength', 'pattern', 'format', 'default', 'example'];
     const arrayAttrs = ['minItems', 'maxItems', 'uniqueItems'];
@@ -175,15 +202,17 @@ function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} 
     return { ...mergedSchema, ...omit(tags, [...numberAttrs, ...stringAttrs, ...arrayAttrs]) };
 }
 
-export function getProperties (node: InterfaceDeclaration | TypeLiteralNode, sourceFile: SourceFile, state: CompilerState): object {
+export function getProperties (node: InterfaceDeclaration | TypeLiteralNode, sourceFile: SourceFile, state: CompilerState): ObjectProperties {
     return node.getProperties().reduce((prev, property) => {
         const name = property.getName();
         const typeNode = property.getTypeNodeOrThrow();
-        const tags = getJsDocTags(property);
+        let tags = getJsDocTags(property);
+        // 忽略
         if ('ignore' in tags) {
             return prev;
         }
-        const schema = mergeTags(getTypeNodeSchema(typeNode, sourceFile, state), tags);
+        const typeSchema = getTypeNodeSchema(typeNode, sourceFile, state);
+        const schema = mergeTags(typeSchema, tags);
         return {
             ...prev,
             [name]: {

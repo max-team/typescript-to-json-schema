@@ -10,7 +10,8 @@ import { isPlainObject, get, omit, uniq, isArray } from 'lodash';
 
 import {
     processInterface,
-    processTypeAlias
+    processTypeAlias,
+    Schema
 } from './util';
 
 /**
@@ -29,17 +30,6 @@ export interface GenerateSchemaOption {
     getRootName?: (filePath: string) => string;
     tsConfigFilePath?: string;
     baseUrl?: string;
-}
-
-interface Schema {
-    type?: string;
-    anyOf?: Schema[];
-    oneOf?: Schema[];
-    $ref?: string;
-    properties?: {
-        [key: string]: Schema
-    },
-    required?: string[];
 }
 
 export function generateSchema(files: string[], options: GenerateSchemaOption): {schemas: {[id: string]: Schema}} {
