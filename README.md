@@ -2,6 +2,7 @@
 
 ![Language](https://img.shields.io/badge/-TypeScript-blue.svg)
 [![npm package](https://img.shields.io/npm/v/@hoth%2ftypescript-to-json-schema.svg)](https://www.npmjs.org/package/@hoth/typescript-to-json-schema)
+[![Build Status](https://travis-ci.org/max-team/typescript-to-json-schema.svg?branch=master)](https://travis-ci.org/max-team/typescript-to-json-schema)
 
 TypeScript to JsonSchema Transpiler
 
