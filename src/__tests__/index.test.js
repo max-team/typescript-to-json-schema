@@ -5,9 +5,16 @@
 
 /* eslint-disable fecs-no-require */
 
-const {readdirSync} = require('fs-extra');
-const {resolve, basename} = require('path');
-const {generateSchema} = require('../index');
+const {
+    readdirSync
+} = require('fs-extra');
+const {
+    resolve,
+    basename
+} = require('path');
+const {
+    generateSchema
+} = require('../index');
 
 describe('typescript-json-schema', () => {
 
@@ -15,7 +22,9 @@ describe('typescript-json-schema', () => {
         .filter(n => n.includes('.ts'))
         .map(n => resolve(__dirname, 'fixtures', n));
 
-    const {schemas} = generateSchema(files, {
+    const {
+        schemas
+    } = generateSchema(files, {
         getId(filePath) {
             return basename(filePath, '.ts') + '.json';
         }
@@ -49,20 +58,19 @@ describe('typescript-json-schema', () => {
 
     it('oneOf', function () {
         expect(image.definitions.timg.anyOf[1].properties.params.properties.cuttype).toEqual({
-            oneOf: [
-              {
-                type: 'integer',
-                minimum: 1,
-                maximum: 8,
-                default: 8
-              },
-              {
-                type: 'string',
-                pattern: '^([bpwhfu][\\\\d_]+|[1-8])$'
-              }
+            oneOf: [{
+                    type: 'integer',
+                    minimum: 1,
+                    maximum: 8,
+                    default: 8
+                },
+                {
+                    type: 'string',
+                    pattern: '^([bpwhfu][\\\\d_]+|[1-8])$'
+                }
             ],
             description: '图片裁剪参数，默认为8'
-          });
+        });
     });
 
     it('array', function () {
@@ -78,6 +86,14 @@ describe('typescript-json-schema', () => {
 
         expect(company.definitions.company.properties.departments.items).toEqual({
             $ref: '#/definitions/department'
+        });
+
+        expect(image.definitions.onlinecut.anyOf[1].properties.test).toEqual({
+            type: 'array',
+            items: {
+                type: 'string'
+            },
+            description: "数组"
         });
     });
 });

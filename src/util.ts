@@ -86,11 +86,18 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
             };
         case ts.SyntaxKind.TypeReference: {
             const text = node.getText();
+            const name = (node as TypeReferenceNode).getTypeName().getText();
             if (buildTypes.has(text)) {
                 const isInterger = text === 'integer';
                 return {
                     type: isInterger ? text : 'string',
                     format: isInterger ? undefined : text
+                };
+            }
+            else if (name === 'Array') {
+                return {
+                    type: 'array',
+                    items: getTypeNodeSchema((node as TypeReferenceNode).getTypeArguments()[0], sourceFile, state)
                 };
             } else {
                 return getRef((node as TypeReferenceNode).getTypeName() as Identifier, sourceFile, state);

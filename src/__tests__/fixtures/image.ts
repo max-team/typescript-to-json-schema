@@ -55,35 +55,8 @@ interface OnlineCut extends ImageBase {
 
     type: "online";
 
-    /** 裁剪参数 */
-    params?: {
-        /**
-         * 图片宽比例
-         *
-         * @default 3
-         */
-        sw?: integer;
-        /**
-         * 图片高比例
-         *
-         * @default 2
-         */
-        sh?: number;
-        /**
-         * 图片栅格化数
-         *
-         * @default 4
-         */
-        grid?: number;
-        /**
-         * 图片裁剪方式，普通裁剪可不传，ct=5 为 5：2 大图裁剪
-         */
-        ct?: numberic;
-        /**
-         * 可扩展图片特殊处理方式，参数不做校验，直接拼接在 url 中
-         */
-        sp?: string;
-    }
+    /** 数组 */
+    test: Array<string>
 }
 
 export type Image = ImageBase | Timg | OnlineCut;
