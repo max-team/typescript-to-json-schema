@@ -206,6 +206,9 @@ function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} 
     if (tags.enumName) {
         tags.enumName = JSON.parse(tags.enumName);
     }
+    if (mergedSchema.$ref && !mergedSchema.type) {
+        return { ...mergedSchema, ...tags }
+    }
     return { ...mergedSchema, ...omit(tags, [...numberAttrs, ...stringAttrs, ...arrayAttrs]) };
 }
 

@@ -105,7 +105,7 @@ interface SchemaList {
     [id: string]: Schema
 }
 
-export function mergeSchemas(schemas: SchemaList, options: { mergeAnyOf?: boolean }) {
+export function mergeSchemas(schemas: SchemaList, options?: { mergeAnyOf?: boolean }) {
 
     const { mergeAnyOf = true } = options;
 
