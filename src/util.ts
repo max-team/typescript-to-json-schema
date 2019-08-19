@@ -44,6 +44,8 @@ export interface Schema {
     format?: string;
     enum?: (string | number)[];
     items?: Schema;
+    if?: Schema,
+    then?: Schema
 }
 
 export function getDescription (node: JSDocableNode) {

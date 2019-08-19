@@ -105,9 +105,12 @@ interface SchemaList {
     [id: string]: Schema
 }
 
-export function mergeSchemas(schemas: SchemaList, options?: { mergeAnyOf?: boolean }) {
+export function mergeSchemas(schemas: SchemaList, options: { mergeAnyOf?: boolean, mergeAllOf?: boolean }) {
 
-    const { mergeAnyOf = true } = options;
+    const {
+        mergeAnyOf = true,
+        mergeAllOf = true
+    } = options;
 
     function mergeSchema(a: Schema, b: Schema): Schema {
         const ret = {...a, ...b};
@@ -150,6 +153,22 @@ export function mergeSchemas(schemas: SchemaList, options?: { mergeAnyOf?: boole
                 ret = mergeSchema(ret, walk(element.anyOf[i], id, schemas))
             }
         }
+        if (element.allOf && mergeAllOf) {
+            let hasIfThen = true;
+            for (let i = 0; i < element.allOf.length; i++) {
+                if (!element.allOf[i].if || !element.allOf[i].then) {
+                    hasIfThen = false;
+                }
+            }
+            if (!hasIfThen) {
+                ret = mergeSchema(omit(ret, 'allOf'), walk(element.allOf[0], id, schemas));
+                for (let i = 0; i < element.allOf.length; i++) {
+                    ret = mergeSchema(ret, walk(element.allOf[i], id, schemas));
+                }
+            }
+        }
+
+
         for (const key in element) {
             if (ret.hasOwnProperty(key)) {
                 if (isPlainObject(element[key])) {
