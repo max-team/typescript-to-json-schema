@@ -202,8 +202,8 @@ function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} 
             }
         });
     }
-    if (tags.flattern) {
-        tags.flattern = getTagValue(tags.flattern, 'boolean');
+    if (tags.flatten) {
+        tags.flatten = getTagValue(tags.flatten, 'boolean');
     }
     if (tags.enumNames) {
         tags.enumNames = JSON.parse(tags.enumNames);
