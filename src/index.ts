@@ -158,13 +158,15 @@ export function mergeSchemas(schemas: SchemaList, options: { mergeAnyOf?: boolea
             for (let i = 0; i < element.allOf.length; i++) {
                 if (!element.allOf[i].if || !element.allOf[i].then) {
                     hasIfThen = false;
+                    break;
                 }
             }
             if (!hasIfThen) {
-                ret = mergeSchema(omit(ret, 'allOf'), walk(element.allOf[0], id, schemas));
-                for (let i = 0; i < element.allOf.length; i++) {
-                    ret = mergeSchema(ret, walk(element.allOf[i], id, schemas));
+                const allOfArray = [...ret.allOf];
+                for (const item of allOfArray) {
+                    ret = mergeSchema(ret, walk(item, id, schemas))
                 }
+                ret = omit(ret, 'allOf');
             }
         }
 
