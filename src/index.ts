@@ -147,29 +147,6 @@ export function mergeSchemas(schemas: SchemaList, options: { mergeAnyOf?: boolea
         if (element.$ref) {
             ret = mergeSchema(omit(element, '$ref'), getSchema(element.$ref, id, schemas));
         }
-        if (element.anyOf && mergeAnyOf) {
-            ret = mergeSchema(omit(ret, 'anyOf'), walk(element.anyOf[0], id, schemas));
-            for (let i = 1; i < element.anyOf.length; i++) {
-                ret = mergeSchema(ret, walk(element.anyOf[i], id, schemas))
-            }
-        }
-        if (element.allOf && mergeAllOf) {
-            let hasIfThen = true;
-            for (let i = 0; i < element.allOf.length; i++) {
-                if (!element.allOf[i].if || !element.allOf[i].then) {
-                    hasIfThen = false;
-                    break;
-                }
-            }
-            if (!hasIfThen) {
-                const allOfArray = [...ret.allOf];
-                for (const item of allOfArray) {
-                    ret = mergeSchema(ret, walk(item, id, schemas))
-                }
-                ret = omit(ret, 'allOf');
-            }
-        }
-
 
         for (const key in element) {
             if (ret.hasOwnProperty(key)) {
@@ -181,6 +158,32 @@ export function mergeSchemas(schemas: SchemaList, options: { mergeAnyOf?: boolea
                 }
             }
         }
+
+        if (element.anyOf && mergeAnyOf) {
+            ret = mergeSchema(omit(ret, 'anyOf'), walk(element.anyOf[0], id, schemas));
+            for (let i = 1; i < element.anyOf.length; i++) {
+                ret = mergeSchema(ret, walk(element.anyOf[i], id, schemas))
+            }
+        }
+
+        if (element.allOf && mergeAllOf) {
+            let hasIfThen = true;
+            for (let i = 0; i < element.allOf.length; i++) {
+                if (!element.allOf[i].if || !element.allOf[i].then) {
+                    hasIfThen = false;
+                    break;
+                }
+            }
+            if (!hasIfThen) {
+                const allOfArray = [ ...ret.allOf ];
+                ret = omit(ret, 'allOf');
+                for (let item of allOfArray) {
+                    item = walk(item, id, schemas);
+                    ret = mergeSchema(ret, item);
+                }
+            }
+        }
+
         return ret;
     }
 

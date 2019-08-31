@@ -13,7 +13,8 @@ const {
     basename
 } = require('path');
 const {
-    generateSchema
+    generateSchema,
+    mergeSchemas
 } = require('../index');
 
 describe('typescript-json-schema', () => {
@@ -33,7 +34,7 @@ describe('typescript-json-schema', () => {
     const image = schemas['image.json'];
     const company = schemas['company.json'];
 
-    console.log(JSON.stringify(image, null, 2));
+    // console.log(JSON.stringify(image, null, 2));
 
     it('$schema & $id & $ref', function () {
         expect(image.$schema).toBe('http://json-schema.org/draft-07/schema#');
@@ -95,5 +96,61 @@ describe('typescript-json-schema', () => {
             },
             description: "数组"
         });
+    });
+
+    it('merge allOf', function () {
+
+        const testSchemas = {
+            a: {
+                allOf: [
+                    {
+                        type: 'object',
+                        properties: {
+                            show: {
+                                type: 'boolean'
+                            }
+                        },
+                        allOf: [
+                            {
+                                if: {
+                                    properties: {
+                                        show: {
+                                            const: true
+                                        }
+                                    }
+                                },
+                                then: {
+                                    properties: {
+                                        price: {
+                                            type: 'string'
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        type: 'object',
+                        properties: {
+                            show: {
+                                const: true
+                            }
+                        }
+                    }
+                ]
+            }
+        };
+
+        const result = mergeSchemas(testSchemas, {
+            mergeAllOf: true
+        });
+
+        expect(result.a.properties.show).toEqual({
+            type: 'boolean',
+            const: true
+        });
+
+        expect(result.a.allOf.length).toEqual(1);
+
     });
 });
