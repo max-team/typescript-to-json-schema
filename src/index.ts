@@ -145,7 +145,7 @@ export function mergeSchemas(schemas: SchemaList, options: { mergeAnyOf?: boolea
         }
         let ret = {...element};
         if (element.$ref) {
-            ret = mergeSchema(omit(element, '$ref'), getSchema(element.$ref, id, schemas));
+            ret = mergeSchema(getSchema(element.$ref, id, schemas), omit(element, '$ref'));
         }
 
         for (const key in element) {
