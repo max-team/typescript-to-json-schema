@@ -72,7 +72,7 @@ const getLiteralTypeValue = (node: LiteralTypeNode) => {
 export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state: CompilerState): Schema {
     switch (node.getKind()) {
         case ts.SyntaxKind.LiteralType:
-            return { const: getLiteralTypeValue(node.getText()) };
+            return { const: getLiteralTypeValue(node as LiteralTypeNode) };
         case ts.SyntaxKind.StringKeyword:
         case ts.SyntaxKind.NumberKeyword:
         case ts.SyntaxKind.BooleanKeyword:
