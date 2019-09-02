@@ -51,13 +51,14 @@ export interface Schema {
 export function getDescription (node: JSDocableNode) {
     const jsdocs = node.getJsDocs();
     if (jsdocs.length > 0) {
-        return jsdocs[0].getComment();
+        const des = jsdocs[0].getComment();
+        return des && des.trim() ? des.trim() : undefined;
     }
 }
 
 export function getRequired (node: InterfaceDeclaration | TypeLiteralNode): string[] | undefined {
     const required = node.getProperties()
-        .filter(n => !n.getQuestionTokenNode())
+        .filter(n => !n.getQuestionTokenNode() && !('ignore' in getJsDocTags(n)))
         .map(n => n.getName());
     if (required.length > 0) {
         return required;
@@ -77,6 +78,7 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
         case ts.SyntaxKind.NumberKeyword:
         case ts.SyntaxKind.BooleanKeyword:
         case ts.SyntaxKind.NullKeyword:
+        case ts.SyntaxKind.ObjectKeyword:
             return {
                 type: node.getText()
             };
