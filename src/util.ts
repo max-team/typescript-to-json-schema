@@ -172,11 +172,11 @@ function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} 
     if (mergedSchema.allOf) {
         mergedSchema.allOf = mergedSchema.allOf.map(s => mergeTags(s, tags));
     }
-    const numberAttrs = ['minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum', 'default', 'example'];
-    const stringAttrs = ['minLength', 'maxLength', 'pattern', 'format', 'default', 'example'];
-    const arrayAttrs = ['minItems', 'maxItems', 'uniqueItems'];
+    const changeAttrs = ['default', 'example'];
+    const numberAttrs = ['minItems', 'maxItems', 'minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum', 'minLength', 'maxLength'];
+    const booleanAttrs = ['uniqueItems', 'flatten'];
     if (['integer', 'number'].indexOf(mergedSchema.type) >= 0) {
-        numberAttrs.forEach(name => {
+        changeAttrs.forEach(name => {
             if (tags[name] != null) {
                 mergedSchema[name] = getTagValue(tags[name], 'number');
                 name === 'default' && delete tags[name];
@@ -184,39 +184,40 @@ function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} 
         });
     }
     if (mergedSchema.type === 'string') {
-        stringAttrs.forEach(name => {
-            if (tags[name] != null) {
-                mergedSchema[name] = getTagValue(tags[name], ['minLength', 'maxLength'].includes(name) ? 'number' : 'string');
-            }
-        });
-    }
-    if (mergedSchema.type === 'array') {
-        arrayAttrs.forEach(name => {
-            if (tags[name] != null) {
-                mergedSchema[name] = getTagValue(tags[name], name === 'uniqueItems' ? 'boolean' : 'number');
-            }
-        });
-    }
-    if (mergedSchema.type === 'string' && mergedSchema.format === 'numberic') {
-        numberAttrs.forEach(name => {
+        changeAttrs.forEach(name => {
             if (tags[name] != null) {
                 mergedSchema[name] = getTagValue(tags[name], 'string');
             }
         });
     }
-    if (tags.flatten) {
-        tags.flatten = getTagValue(tags.flatten, 'boolean');
-    }
-    if (tags.enumNames) {
-        tags.enumNames = JSON.parse(tags.enumNames);
-    }
-    if (tags.enumName) {
-        tags.enumName = JSON.parse(tags.enumName);
+    numberAttrs.forEach(name => {
+        if (tags[name] != null) {
+            mergedSchema[name] = getTagValue(tags[name], 'number');
+        }
+    });
+    booleanAttrs.forEach(name => {
+        if (tags[name] != null) {
+            mergedSchema[name] = getTagValue(tags[name], 'boolean');
+        }
+    });
+    const jsonAttrs = ['enumNames', 'enumName', 'dataSchemaRequired', 'opencardDataSchemaRequired'];
+    for (const attr of jsonAttrs) {
+        if (tags[attr] != null) {
+            tags[attr] = JSON.parse(tags[attr]);
+        }
     }
     if (mergedSchema.$ref && !mergedSchema.type) {
         return { ...mergedSchema, ...tags }
     }
-    return { ...mergedSchema, ...omit(tags, [...numberAttrs, ...stringAttrs, ...arrayAttrs]) };
+    return {
+        ...mergedSchema,
+        ...omit(tags, [
+            ...jsonAttrs,
+            ...numberAttrs,
+            ...booleanAttrs,
+            ...changeAttrs
+        ])
+    };
 }
 
 export function getProperties (node: InterfaceDeclaration | TypeLiteralNode, sourceFile: SourceFile, state: CompilerState): ObjectProperties {
