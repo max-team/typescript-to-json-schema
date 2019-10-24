@@ -203,7 +203,7 @@ function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} 
     const jsonAttrs = ['enumNames', 'enumName', 'dataSchemaRequired', 'opencardDataSchemaRequired'];
     for (const attr of jsonAttrs) {
         if (tags[attr] != null) {
-            tags[attr] = JSON.parse(tags[attr]);
+            mergedSchema[attr] = JSON.parse(tags[attr]);
         }
     }
     if (mergedSchema.$ref && !mergedSchema.type) {
