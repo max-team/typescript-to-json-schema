@@ -248,7 +248,7 @@ export function getRef (identifier: Identifier, sourceFile: SourceFile, state: C
     if (file.getFilePath() !== sourceFile.getFilePath()) {
         id = state.getId(file.getFilePath());
     }
-    return { $ref: `${id}#/definitions/${identifier.getText().toLowerCase()}` };
+    return { $ref: `${id}#/definitions/${definitions[0].getName().toLowerCase()}` };
 }
 
 function getJsDocTags(node: JSDocableNode) {
