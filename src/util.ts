@@ -17,7 +17,8 @@ import {
     TypeAliasDeclaration,
     ArrayTypeNode,
     LiteralTypeNode,
-    IndexedAccessTypeNode
+    IndexedAccessTypeNode,
+    EnumDeclaration
 } from "ts-morph";
 
 import { omit } from 'lodash';
@@ -296,6 +297,13 @@ export function processTypeAlias (node: TypeAliasDeclaration, sourceFile: Source
     const schema = mergeTags(getTypeNodeSchema(typeNode, sourceFile, state), tags);
     return {
         ...schema,
+        description: getDescription(node)
+    };
+}
+
+export function processEnum (node: EnumDeclaration) {
+    return {
+        enum: node.getMembers().map(member => member.getValue()),
         description: getDescription(node)
     };
 }

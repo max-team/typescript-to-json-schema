@@ -11,6 +11,7 @@ import { isPlainObject, get, omit, uniq, isArray } from 'lodash';
 import {
     processInterface,
     processTypeAlias,
+    processEnum,
     Schema
 } from './util';
 
@@ -73,6 +74,15 @@ export function generateSchema(files: string[], options: GenerateSchemaOption): 
                 (prev, node) => ({
                     ...prev,
                     [node.getName().toLowerCase()]: processTypeAlias(node, sourceFile, state)
+                }),
+                definitions
+            );
+
+            const enums = sourceFile.getEnums();
+            definitions = enums.reduce(
+                (prev, node) => ({
+                    ...prev,
+                    [node.getName().toLowerCase()]: processEnum(node)
                 }),
                 definitions
             );
