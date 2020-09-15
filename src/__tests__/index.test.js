@@ -57,22 +57,22 @@ describe('typescript-json-schema', () => {
         });
     });
 
-    it('oneOf', function () {
-        expect(image.definitions.timg.anyOf[1].properties.params.properties.cuttype).toEqual({
-            oneOf: [{
-                    type: 'integer',
-                    minimum: 1,
-                    maximum: 8,
-                    default: 8
-                },
-                {
-                    type: 'string',
-                    pattern: '^([bpwhfu][\\\\d_]+|[1-8])$'
-                }
-            ],
-            description: '图片裁剪参数，默认为8'
-        });
-    });
+    // it('oneOf', function () {
+    //     expect(image.definitions.timg.anyOf[1].properties.params.properties.cuttype).toEqual({
+    //         oneOf: [{
+    //                 type: 'integer',
+    //                 minimum: 1,
+    //                 maximum: 8,
+    //                 default: 8
+    //             },
+    //             {
+    //                 type: 'string',
+    //                 pattern: '^([bpwhfu][\\\\d_]+|[1-8])$'
+    //             }
+    //         ],
+    //         description: '图片裁剪参数，默认为8'
+    //     });
+    // });
 
     it('array', function () {
 
