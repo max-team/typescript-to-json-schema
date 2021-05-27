@@ -33,6 +33,7 @@ describe('typescript-json-schema', () => {
 
     const image = schemas['image.json'];
     const company = schemas['company.json'];
+    const record = schemas['record.json'];
 
     // console.log(JSON.stringify(image, null, 2));
 
@@ -96,6 +97,35 @@ describe('typescript-json-schema', () => {
             },
             description: "数组"
         });
+    });
+
+    it('record', function () {
+        const properties = record.definitions.test.properties;
+        expect(properties.a).toEqual({
+            type: 'object',
+            propertyNames: {
+                type: 'string'
+            },
+            additionalProperties: {
+                type: 'string'
+            }
+        });
+        expect(properties.b.propertyNames).toEqual({
+            type: 'number'
+        });
+        expect(properties.c.propertyNames).toEqual({
+            enum: ['a', 'b']
+        });
+        expect(properties.d.additionalProperties).toEqual({
+            type: 'boolean'
+        });
+        expect(properties.e.additionalProperties).toEqual({
+            type: 'number'
+        });
+        expect(properties.f.additionalProperties).toEqual({
+            $ref: '#/definitions/testvalue'
+        });
+        expect(properties.g.additionalProperties).toEqual({});
     });
 
     it('merge allOf', function () {
