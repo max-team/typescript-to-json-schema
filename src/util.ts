@@ -46,7 +46,9 @@ export interface Schema {
     enum?: (string | number)[];
     items?: Schema;
     if?: Schema,
-    then?: Schema
+    then?: Schema,
+    propertyNames?: Schema;
+    additionalProperties?: Schema;
 }
 
 export function getDescription (node: JSDocableNode) {
@@ -104,7 +106,16 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
                     type: 'array',
                     items: getTypeNodeSchema((node as TypeReferenceNode).getTypeArguments()[0], sourceFile, state)
                 };
-            } else {
+            }
+            else if (name === 'Record') {
+                const typeArgs = (node as TypeReferenceNode).getTypeArguments();
+                return {
+                    type: 'object',
+                    propertyNames: getTypeNodeSchema(typeArgs[0], sourceFile, state),
+                    additionalProperties: getTypeNodeSchema(typeArgs[1], sourceFile, state)
+                };
+            }
+            else {
                 return getRef((node as TypeReferenceNode).getTypeName() as Identifier, sourceFile, state);
             }
         }
