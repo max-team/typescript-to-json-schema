@@ -290,7 +290,7 @@ function getJsDocTags(node: JSDocableNode) {
     return node.getJsDocs().reduce((prev, jsdoc) => {
         return {
             ...prev,
-            ...jsdoc.getTags().reduce((p, v) => (v ? { ...p, [v.getTagName()]: v.getComment() } : p), {})
+            ...jsdoc.getTags().reduce((p, v) => (v.getKind() === ts.SyntaxKind.JSDocTag ? { ...p, [v.getTagName()]: v.getComment() } : p), {})
         };
     }, {});
 }
