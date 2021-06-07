@@ -12,7 +12,8 @@ import {
     processInterface,
     processTypeAlias,
     processEnum,
-    Schema
+    Schema,
+    PropIterator
 } from './util';
 
 /**
@@ -29,6 +30,7 @@ export type integer = number;
 export interface GenerateSchemaOption {
     getId(filePath: string): string;
     getRootName?: (filePath: string) => string;
+    beforePropMount?: PropIterator;
     tsConfigFilePath?: string;
     baseUrl?: string;
 }
@@ -37,6 +39,7 @@ export function generateSchema(files: string[], options: GenerateSchemaOption): 
 
     const {
         getId,
+        beforePropMount,
         getRootName = filePath => basename(filePath, '.ts').toLowerCase(),
         tsConfigFilePath,
         baseUrl = 'http://www.baidu.com/schemas'
@@ -46,7 +49,7 @@ export function generateSchema(files: string[], options: GenerateSchemaOption): 
         tsConfigFilePath
     });
 
-    const state = { getId };
+    const state = { getId, beforePropMount };
 
     const sourceFiles = project.addExistingSourceFiles(files);
     project.resolveSourceFileDependencies();

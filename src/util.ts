@@ -18,15 +18,25 @@ import {
     ArrayTypeNode,
     LiteralTypeNode,
     IndexedAccessTypeNode,
-    EnumDeclaration
+    EnumDeclaration,
+    PropertySignature
 } from "ts-morph";
 
 import { omit } from 'lodash';
 
 const buildTypes = new Set(['integer', 'numberic']);
 
+export interface PropContext {
+    property: PropertySignature;
+    typeNode: TypeNode,
+    interface: InterfaceDeclaration;
+    sourceFile: SourceFile;
+}
+export type PropIterator = (ctx: PropContext, schema: Schema) => {ignore: boolean} | undefined;
+
 export interface CompilerState {
     getId(filePath: string): string;
+    beforePropMount?: PropIterator;
 }
 
 interface ObjectProperties {
@@ -49,6 +59,7 @@ export interface Schema {
     then?: Schema,
     propertyNames?: Schema;
     additionalProperties?: Schema;
+    description?: string;
 }
 
 export function getDescription (node: JSDocableNode) {
@@ -242,13 +253,25 @@ export function getProperties (node: InterfaceDeclaration | TypeLiteralNode, sou
             return prev;
         }
         const typeSchema = getTypeNodeSchema(typeNode, sourceFile, state);
-        const schema = mergeTags(typeSchema, tags);
+        const schema = {
+            ...mergeTags(typeSchema, tags),
+            description: getDescription(property)
+        };
+
+        if (state.beforePropMount) {
+            const {ignore} = state.beforePropMount({
+                property,
+                typeNode,
+                interface: node as InterfaceDeclaration,
+                sourceFile
+            }, schema) || {};
+            if (ignore) {
+                return prev;
+            }
+        }
         return {
             ...prev,
-            [name]: {
-                ...schema,
-                description: getDescription(property)
-            }
+            [name]: schema
         };
     }, {});
 }
@@ -267,7 +290,7 @@ function getJsDocTags(node: JSDocableNode) {
     return node.getJsDocs().reduce((prev, jsdoc) => {
         return {
             ...prev,
-            ...jsdoc.getTags().reduce((p, v) => ({ ...p, [v.getTagName()]: v.getComment() }), {})
+            ...jsdoc.getTags().reduce((p, v) => (v ? { ...p, [v.getTagName()]: v.getComment() } : p), {})
         };
     }, {});
 }
