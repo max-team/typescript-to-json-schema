@@ -19,7 +19,9 @@ import {
     LiteralTypeNode,
     IndexedAccessTypeNode,
     EnumDeclaration,
-    PropertySignature
+    PropertySignature,
+    PropertyAccessExpression,
+    QualifiedName
 } from "ts-morph";
 
 import { omit } from 'lodash';
@@ -277,13 +279,33 @@ export function getProperties (node: InterfaceDeclaration | TypeLiteralNode, sou
 }
 
 export function getRef (identifier: Identifier, sourceFile: SourceFile, state: CompilerState) {
-    const definitions = identifier.getDefinitions();
-    const file = definitions[0].getSourceFile();
+    const defArr: Identifier[] = [];
+    if (identifier.getKind() === ts.SyntaxKind.PropertyAccessExpression) {
+        const expNode = identifier as unknown as PropertyAccessExpression;
+        defArr.push(expNode.getExpression() as Identifier);
+        defArr.push(expNode.getNameNode());
+    }
+    else if (identifier.getKind() === ts.SyntaxKind.QualifiedName) {
+        const expNode = identifier as unknown as QualifiedName;
+        defArr.push(expNode.getLeft() as Identifier);
+        defArr.push(expNode.getRight());
+    }
+    else {
+        defArr.push(identifier);
+    }
+
+    let file = null;
+    const defNames = defArr.reduce((prev, def) => {
+        const definitions = def.getDefinitions();
+        file = definitions[0].getSourceFile();
+        prev.push(definitions[0].getName().toLowerCase());
+        return prev;
+    }, []);
     let id = '';
     if (file.getFilePath() !== sourceFile.getFilePath()) {
         id = state.getId(file.getFilePath());
     }
-    return { $ref: `${id}#/definitions/${definitions[0].getName().toLowerCase()}` };
+    return { $ref: `${id}#/definitions/${defNames.join('/')}` };
 }
 
 function getJsDocTags(node: JSDocableNode) {

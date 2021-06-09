@@ -34,6 +34,7 @@ describe('typescript-json-schema', () => {
     const image = schemas['image.json'];
     const company = schemas['company.json'];
     const record = schemas['record.json'];
+    const namespace = schemas['namespace.json'];
 
     // console.log(JSON.stringify(image, null, 2));
 
@@ -126,6 +127,31 @@ describe('typescript-json-schema', () => {
             $ref: '#/definitions/testvalue'
         });
         expect(properties.g.additionalProperties).toEqual({});
+    });
+
+    it('namespace', function () {
+        const {testnamespace, emptynamespace} = namespace.definitions;
+        expect(testnamespace).toEqual({
+            test: {
+                type: 'object',
+                properties: {
+                    a: {
+                        type: 'string'
+                    }
+                },
+                required: ['a']
+            },
+            fooz: {
+                type: 'object',
+                properties: {
+                    bar: {
+                        type: 'number'
+                    }
+                },
+                required: ['bar']
+            }
+        });
+        expect(emptynamespace).toEqual({});
     });
 
     it('merge allOf', function () {

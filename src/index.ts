@@ -3,7 +3,7 @@
  * @author cxtom(cxtom2008@gmail.com)
  */
 
-import { Project } from 'ts-morph';
+import { Project, SourceFile, NamespaceDeclaration } from 'ts-morph';
 import { basename } from 'path';
 
 import { isPlainObject, get, omit, uniq, isArray } from 'lodash';
@@ -13,7 +13,8 @@ import {
     processTypeAlias,
     processEnum,
     Schema,
-    PropIterator
+    PropIterator,
+    CompilerState
 } from './util';
 
 /**
@@ -33,6 +34,40 @@ export interface GenerateSchemaOption {
     beforePropMount?: PropIterator;
     tsConfigFilePath?: string;
     baseUrl?: string;
+}
+
+function getDefinitions(sourceFile: SourceFile, state: CompilerState, namespace?: NamespaceDeclaration) {
+    const source = namespace || sourceFile;
+    let definitions: {[name: string]: object} = {};
+
+    const interfaces = source.getInterfaces();
+    definitions = interfaces.reduce(
+        (prev, node) => ({
+            ...prev,
+            [node.getName().toLowerCase()]: processInterface(node, sourceFile, state)
+        }),
+        definitions
+    );
+
+    const typeAliases = source.getTypeAliases();
+    definitions = typeAliases.reduce(
+        (prev, node) => ({
+            ...prev,
+            [node.getName().toLowerCase()]: processTypeAlias(node, sourceFile, state)
+        }),
+        definitions
+    );
+
+    const enums = source.getEnums();
+    definitions = enums.reduce(
+        (prev, node) => ({
+            ...prev,
+            [node.getName().toLowerCase()]: processEnum(node)
+        }),
+        definitions
+    );
+
+    return definitions;
 }
 
 export function generateSchema(files: string[], options: GenerateSchemaOption): {schemas: {[id: string]: Schema}} {
@@ -63,32 +98,19 @@ export function generateSchema(files: string[], options: GenerateSchemaOption): 
         let definitions: {[name: string]: object} = {};
 
         try {
-            const interfaces = sourceFile.getInterfaces();
-            definitions = interfaces.reduce(
-                (prev, node) => ({
+            const namespaces = sourceFile.getNamespaces();
+            definitions = namespaces.reduce(
+                (prev, namespace) => ({
                     ...prev,
-                    [node.getName().toLowerCase()]: processInterface(node, sourceFile, state)
+                    [namespace.getName().toLowerCase()]: getDefinitions(sourceFile, state, namespace)
                 }),
                 definitions
             );
 
-            const typeAliases = sourceFile.getTypeAliases();
-            definitions = typeAliases.reduce(
-                (prev, node) => ({
-                    ...prev,
-                    [node.getName().toLowerCase()]: processTypeAlias(node, sourceFile, state)
-                }),
-                definitions
-            );
-
-            const enums = sourceFile.getEnums();
-            definitions = enums.reduce(
-                (prev, node) => ({
-                    ...prev,
-                    [node.getName().toLowerCase()]: processEnum(node)
-                }),
-                definitions
-            );
+            definitions = {
+                ...definitions,
+                ...getDefinitions(sourceFile, state)
+            };
         }
         catch (e) {
             console.error(`${filePath} generate error! ${e.stack}`);
