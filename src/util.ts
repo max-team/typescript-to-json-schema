@@ -21,7 +21,8 @@ import {
     EnumDeclaration,
     PropertySignature,
     PropertyAccessExpression,
-    QualifiedName
+    QualifiedName,
+    TemplateLiteralTypeNode
 } from "ts-morph";
 
 import { omit } from 'lodash';
@@ -67,7 +68,7 @@ export interface Schema {
 export function getDescription (node: JSDocableNode) {
     const jsdocs = node.getJsDocs();
     if (jsdocs.length > 0) {
-        const des = jsdocs[0].getComment();
+        const des = jsdocs[0].getCommentText();
         return des && des.trim() ? des.trim() : undefined;
     }
 }
@@ -90,6 +91,8 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
     switch (node.getKind()) {
         case ts.SyntaxKind.LiteralType:
             return { const: getLiteralTypeValue(node as LiteralTypeNode) };
+        case ts.SyntaxKind.TemplateLiteralType:
+            return { const: JSON.parse((node as TemplateLiteralTypeNode).getType().getText()) };
         case ts.SyntaxKind.StringKeyword:
         case ts.SyntaxKind.NumberKeyword:
         case ts.SyntaxKind.BooleanKeyword:

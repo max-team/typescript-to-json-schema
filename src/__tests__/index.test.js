@@ -33,7 +33,7 @@ describe('typescript-json-schema', () => {
 
     const image = schemas['image.json'];
     const company = schemas['company.json'];
-    const record = schemas['record.json'];
+    const support = schemas['support.json'];
     const namespace = schemas['namespace.json'];
 
     // console.log(JSON.stringify(image, null, 2));
@@ -53,7 +53,7 @@ describe('typescript-json-schema', () => {
             oneOf: [{
                 type: 'boolean'
             }, {
-                type: 'null'
+                const: null
             }],
             description: '是否开始'
         });
@@ -100,8 +100,15 @@ describe('typescript-json-schema', () => {
         });
     });
 
+    it('literal', function () {
+        const definitions = support.definitions;
+        expect(definitions.hello).toEqual({ const: 'Hello' });
+        expect(definitions.world).toEqual({ const: 'World' });
+        expect(definitions.foo).toEqual({ const: 'Hello World!' });
+    });
+
     it('record', function () {
-        const properties = record.definitions.test.properties;
+        const properties = support.definitions.recordtest.properties;
         expect(properties.a).toEqual({
             type: 'object',
             propertyNames: {

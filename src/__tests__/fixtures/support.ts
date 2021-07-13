@@ -3,7 +3,7 @@ interface TestValue {
     test: string;
 }
 
-interface Test {
+interface RecordTest {
     a: Record<string, string>;
     b: Record<number, string>;
     c: Record<'a' | 'b', string>;
@@ -12,3 +12,7 @@ interface Test {
     f: Record<string, TestValue>;
     g: Record<string, unknown>;
 }
+
+type Hello = "Hello";
+type World = "World";
+type Foo = `${Hello} ${World}!`;

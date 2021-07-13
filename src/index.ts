@@ -3,7 +3,7 @@
  * @author cxtom(cxtom2008@gmail.com)
  */
 
-import { Project, SourceFile, NamespaceDeclaration } from 'ts-morph';
+import { Project, SourceFile, ModuleDeclaration } from 'ts-morph';
 import { basename } from 'path';
 
 import { isPlainObject, get, omit, uniq, isArray } from 'lodash';
@@ -36,7 +36,7 @@ export interface GenerateSchemaOption {
     baseUrl?: string;
 }
 
-function getDefinitions(sourceFile: SourceFile, state: CompilerState, namespace?: NamespaceDeclaration) {
+function getDefinitions(sourceFile: SourceFile, state: CompilerState, namespace?: ModuleDeclaration) {
     const source = namespace || sourceFile;
     let definitions: {[name: string]: object} = {};
 
@@ -86,7 +86,7 @@ export function generateSchema(files: string[], options: GenerateSchemaOption): 
 
     const state = { getId, beforePropMount };
 
-    const sourceFiles = project.addExistingSourceFiles(files);
+    const sourceFiles = project.addSourceFilesAtPaths(files);
     project.resolveSourceFileDependencies();
 
     const schemas: {[name: string]: object} = {};
@@ -98,7 +98,7 @@ export function generateSchema(files: string[], options: GenerateSchemaOption): 
         let definitions: {[name: string]: object} = {};
 
         try {
-            const namespaces = sourceFile.getNamespaces();
+            const namespaces = sourceFile.getModules();
             definitions = namespaces.reduce(
                 (prev, namespace) => ({
                     ...prev,
