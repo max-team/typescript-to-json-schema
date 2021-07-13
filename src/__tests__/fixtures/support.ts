@@ -1,6 +1,8 @@
 
 interface TestValue {
     test: string;
+    name: number;
+    bool: boolean;
 }
 
 interface RecordTest {
@@ -16,3 +18,12 @@ interface RecordTest {
 type Hello = "Hello";
 type World = "World";
 type Foo = `${Hello} ${World}!`;
+
+interface PickOmit {
+    /** Pick */
+    pick: Pick<TestValue, 'name'>;
+    /** pickMulti */
+    pickMulti: Pick<TestValue, 'name' | 'bool'>;
+    omit: Omit<TestValue, 'name'>;
+    omitMulti: Omit<TestValue, 'name' | 'bool'>;
+}

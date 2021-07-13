@@ -25,7 +25,7 @@ import {
     TemplateLiteralTypeNode
 } from "ts-morph";
 
-import { omit } from 'lodash';
+import { omit, pick } from 'lodash';
 
 const buildTypes = new Set(['integer', 'numberic']);
 
@@ -130,6 +130,24 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
                     propertyNames: getTypeNodeSchema(typeArgs[0], sourceFile, state),
                     additionalProperties: getTypeNodeSchema(typeArgs[1], sourceFile, state)
                 };
+            }
+            else if (['Pick', 'Omit'].includes(name)) {
+                const typeArgs = (node as TypeReferenceNode).getTypeArguments();
+                const schema = processInterface(
+                    (typeArgs[0] as TypeReferenceNode).getTypeName().getSymbol().getDeclarations()[0] as InterfaceDeclaration,
+                    sourceFile,
+                    state
+                ) as Schema;
+                const {const: constVal, enum: enumVal} = getTypeNodeSchema(typeArgs[1], sourceFile, state);
+                const propNames = constVal ? [constVal] : enumVal;
+                return {
+                    type: 'object',
+                    properties: (name === 'Pick' ? pick : omit)(schema.properties, propNames),
+                    required: (schema.required || []).filter(itm => {
+                        const res = propNames.includes(itm);
+                        return name === 'Pick' ? res : !res;
+                    })
+                }
             }
             else {
                 return getRef((node as TypeReferenceNode).getTypeName() as Identifier, sourceFile, state);

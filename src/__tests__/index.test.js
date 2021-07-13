@@ -136,6 +136,54 @@ describe('typescript-json-schema', () => {
         expect(properties.g.additionalProperties).toEqual({});
     });
 
+    it('pickomit', function () {
+        const {pick, pickMulti, omit, omitMulti} = support.definitions.pickomit.properties;
+        expect(pick).toEqual({
+            type: 'object',
+            properties: {
+                name: {
+                    type: 'number'
+                }
+            },
+            required: ['name'],
+            description: 'Pick'
+        });
+        expect(pickMulti).toEqual({
+            type: 'object',
+            properties: {
+                name: {
+                    type: 'number'
+                },
+                bool: {
+                    type: 'boolean'
+                }
+            },
+            required: ['name', 'bool'],
+            description: 'pickMulti'
+          });
+        expect(omit).toEqual({
+            type: 'object',
+            properties: {
+                test: {
+                    type: 'string'
+                },
+                bool: {
+                    type: 'boolean'
+                }
+            },
+            required: ['test', 'bool']
+        });
+        expect(omitMulti).toEqual({
+            type: 'object',
+            properties: {
+                test: {
+                    type: 'string'
+                }
+            },
+            required: ['test']
+        });
+    });
+
     it('namespace', function () {
         const {testnamespace, emptynamespace} = namespace.definitions;
         expect(testnamespace).toEqual({
