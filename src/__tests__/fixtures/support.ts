@@ -27,3 +27,13 @@ interface PickOmit {
     omit: Omit<TestValue, 'name'>;
     omitMulti: Omit<TestValue, 'name' | 'bool'>;
 }
+
+interface GenericData<T, K> {
+    data: K;
+    type: T;
+}
+
+interface GenericTest {
+    inner: GenericData<string, TestValue>;
+    outer: GenericData<'0' | '1', TestValue>;
+}
