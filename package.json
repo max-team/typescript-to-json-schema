@@ -25,8 +25,9 @@
   },
   "dependencies": {
     "fs-extra": "^8.0.1",
+    "json-schema-traverse": "^1.0.0",
     "lodash": "^4.17.20",
-    "ts-morph": "^2.3.0",
+    "ts-morph": "^11.0.3",
     "typescript": "~3.8.0"
   },
   "devDependencies": {

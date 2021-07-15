@@ -33,7 +33,7 @@ describe('typescript-json-schema', () => {
 
     const image = schemas['image.json'];
     const company = schemas['company.json'];
-    const record = schemas['record.json'];
+    const support = schemas['support.json'];
     const namespace = schemas['namespace.json'];
 
     // console.log(JSON.stringify(image, null, 2));
@@ -53,7 +53,7 @@ describe('typescript-json-schema', () => {
             oneOf: [{
                 type: 'boolean'
             }, {
-                type: 'null'
+                const: null
             }],
             description: '是否开始'
         });
@@ -100,8 +100,15 @@ describe('typescript-json-schema', () => {
         });
     });
 
+    it('literal', function () {
+        const definitions = support.definitions;
+        expect(definitions.hello).toEqual({ const: 'Hello' });
+        expect(definitions.world).toEqual({ const: 'World' });
+        expect(definitions.foo).toEqual({ const: 'Hello World!' });
+    });
+
     it('record', function () {
-        const properties = record.definitions.test.properties;
+        const properties = support.definitions.recordtest.properties;
         expect(properties.a).toEqual({
             type: 'object',
             propertyNames: {
@@ -127,6 +134,100 @@ describe('typescript-json-schema', () => {
             $ref: '#/definitions/testvalue'
         });
         expect(properties.g.additionalProperties).toEqual({});
+    });
+
+    it('pickomit', function () {
+        const {pick, pickMulti, omit, omitMulti} = support.definitions.pickomit.properties;
+        expect(pick).toEqual({
+            type: 'object',
+            properties: {
+                name: {
+                    type: 'number'
+                }
+            },
+            required: ['name'],
+            description: 'Pick'
+        });
+        expect(pickMulti).toEqual({
+            type: 'object',
+            properties: {
+                name: {
+                    type: 'number'
+                },
+                bool: {
+                    type: 'boolean'
+                }
+            },
+            required: ['name', 'bool'],
+            description: 'pickMulti'
+          });
+        expect(omit).toEqual({
+            type: 'object',
+            properties: {
+                test: {
+                    type: 'string'
+                },
+                bool: {
+                    type: 'boolean'
+                }
+            },
+            required: ['test', 'bool']
+        });
+        expect(omitMulti).toEqual({
+            type: 'object',
+            properties: {
+                test: {
+                    type: 'string'
+                }
+            },
+            required: ['test']
+        });
+    });
+
+    it('Generic', function () {
+        const {inner, outer, outerRename} = support.definitions.generictest.properties;
+        expect(inner).toEqual({
+            type: 'object',
+            properties: {
+                data: {
+                    $ref: '#/definitions/testvalue'
+                },
+                type: {
+                    type: 'string'
+                }
+            },
+            required: ['data', 'type']
+        });
+        expect(outer).toEqual({
+            type: 'object',
+            properties: {
+                name: {
+                    type: 'string'
+                },
+                data: {
+                    $ref: '#/definitions/testvalue'
+                },
+                type: {
+                    enum: ['0', '1']
+                }
+            },
+            required: ['name', 'data', 'type']
+        });
+        expect(outerRename).toEqual({
+            type: 'object',
+            properties: {
+                rename: {
+                    type: 'string'
+                },
+                data: {
+                    $ref: '#/definitions/testvalue'
+                },
+                type: {
+                    enum: ['0', '1']
+                }
+            },
+            required: ['rename', 'data', 'type']
+        });
     });
 
     it('namespace', function () {

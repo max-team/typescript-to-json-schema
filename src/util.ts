@@ -21,10 +21,13 @@ import {
     EnumDeclaration,
     PropertySignature,
     PropertyAccessExpression,
-    QualifiedName
+    QualifiedName,
+    TemplateLiteralTypeNode,
+    ImportSpecifier
 } from "ts-morph";
 
-import { omit } from 'lodash';
+import { omit, pick } from 'lodash';
+import traverse from 'json-schema-traverse';
 
 const buildTypes = new Set(['integer', 'numberic']);
 
@@ -67,7 +70,7 @@ export interface Schema {
 export function getDescription (node: JSDocableNode) {
     const jsdocs = node.getJsDocs();
     if (jsdocs.length > 0) {
-        const des = jsdocs[0].getComment();
+        const des = jsdocs[0].getCommentText();
         return des && des.trim() ? des.trim() : undefined;
     }
 }
@@ -90,6 +93,8 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
     switch (node.getKind()) {
         case ts.SyntaxKind.LiteralType:
             return { const: getLiteralTypeValue(node as LiteralTypeNode) };
+        case ts.SyntaxKind.TemplateLiteralType:
+            return { const: JSON.parse((node as TemplateLiteralTypeNode).getType().getText()) };
         case ts.SyntaxKind.StringKeyword:
         case ts.SyntaxKind.NumberKeyword:
         case ts.SyntaxKind.BooleanKeyword:
@@ -104,34 +109,8 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
                 properties: getProperties(node as TypeLiteralNode, sourceFile, state),
                 required: getRequired(node as TypeLiteralNode)
             };
-        case ts.SyntaxKind.TypeReference: {
-            const text = node.getText();
-            const name = (node as TypeReferenceNode).getTypeName().getText();
-            if (buildTypes.has(text)) {
-                const isInterger = text === 'integer';
-                return {
-                    type: isInterger ? text : 'string',
-                    format: isInterger ? undefined : text
-                };
-            }
-            else if (name === 'Array') {
-                return {
-                    type: 'array',
-                    items: getTypeNodeSchema((node as TypeReferenceNode).getTypeArguments()[0], sourceFile, state)
-                };
-            }
-            else if (name === 'Record') {
-                const typeArgs = (node as TypeReferenceNode).getTypeArguments();
-                return {
-                    type: 'object',
-                    propertyNames: getTypeNodeSchema(typeArgs[0], sourceFile, state),
-                    additionalProperties: getTypeNodeSchema(typeArgs[1], sourceFile, state)
-                };
-            }
-            else {
-                return getRef((node as TypeReferenceNode).getTypeName() as Identifier, sourceFile, state);
-            }
-        }
+        case ts.SyntaxKind.TypeReference: 
+            return getTypeReferenceSchema(node as TypeReferenceNode, sourceFile, state);
         case ts.SyntaxKind.UnionType: {
             const types = (node as UnionTypeNode).getTypeNodes();
             if (types.every(t => TypeGuards.isLiteralTypeNode(t))) {
@@ -172,6 +151,81 @@ export function getTypeNodeSchema (node: TypeNode, sourceFile: SourceFile, state
         default:
             return {};
     }
+}
+
+function getTypeReferenceSchema(node: TypeReferenceNode, sourceFile: SourceFile, state: CompilerState): Schema {
+    const text = node.getText();
+    const name = (node as TypeReferenceNode).getTypeName().getText();
+    if (buildTypes.has(text)) {
+        const isInterger = text === 'integer';
+        return {
+            type: isInterger ? text : 'string',
+            format: isInterger ? undefined : text
+        };
+    }
+    if (name === 'Array') {
+        return {
+            type: 'array',
+            items: getTypeNodeSchema((node as TypeReferenceNode).getTypeArguments()[0], sourceFile, state)
+        };
+    }
+
+    const typeArgs = (node as TypeReferenceNode).getTypeArguments();
+    if (name === 'Record') {
+        return {
+            type: 'object',
+            propertyNames: getTypeNodeSchema(typeArgs[0], sourceFile, state),
+            additionalProperties: getTypeNodeSchema(typeArgs[1], sourceFile, state)
+        };
+    }
+    if (['Pick', 'Omit'].includes(name)) {
+        const schema = processInterface(
+            getInterface(typeArgs[0] as TypeReferenceNode),
+            sourceFile,
+            state
+        ) as Schema;
+        const {const: constVal, enum: enumVal} = getTypeNodeSchema(typeArgs[1], sourceFile, state);
+        const propNames = constVal ? [constVal] : enumVal;
+        return {
+            type: 'object',
+            properties: (name === 'Pick' ? pick : omit)(schema.properties, propNames),
+            required: (schema.required || []).filter(itm => {
+                const res = propNames.includes(itm);
+                return name === 'Pick' ? res : !res;
+            })
+        }
+    }
+    // 视为泛型
+    if (typeArgs.length > 0) {
+        const typeMaps = typeArgs.map(typeNode => getTypeNodeSchema(typeNode, sourceFile, state));
+        const genDec = getInterface(node as TypeReferenceNode);
+        const relMap = genDec.getTypeParameters().reduce((prev, typeNode, idx) => {
+            prev[`#/definitions/${typeNode.getName().toLowerCase()}`] = typeMaps[idx];
+            return prev;
+        }, {});
+        const schema = processInterface(genDec, sourceFile, state) as Schema;
+        traverse(schema, {
+            cb: obj => {
+                const {$ref} = obj;
+                if ($ref && relMap[$ref]) {
+                    delete obj.$ref;
+                    Object.assign(obj, relMap[$ref]);
+                }
+            }
+        });
+        return schema;
+    }
+
+    return getRef((node as TypeReferenceNode).getTypeName() as Identifier, sourceFile, state);
+}
+
+function getInterface(typeRefNode: TypeReferenceNode): InterfaceDeclaration {
+    const nodeDel = typeRefNode.getTypeName().getSymbol().getDeclarations()[0];
+    if (nodeDel.getKind() === ts.SyntaxKind.ImportSpecifier) {
+        const sourceFile = (nodeDel as ImportSpecifier).getImportDeclaration().getModuleSpecifierSourceFile();
+        return sourceFile.getInterface((nodeDel as InterfaceDeclaration).getName());
+    }
+    return nodeDel as InterfaceDeclaration;
 }
 
 function getTagValue(tag, type: 'string' | 'number' | 'boolean'): boolean | number | string | {$data: string}  {
@@ -302,7 +356,10 @@ export function getRef (identifier: Identifier, sourceFile: SourceFile, state: C
         return prev;
     }, []);
     let id = '';
-    if (file.getFilePath() !== sourceFile.getFilePath()) {
+    if (defArr.length === 1
+        && identifier.getDefinitions()[0].getKind() !== ts.ScriptElementKind.typeParameterElement
+        && file.getFilePath() !== sourceFile.getFilePath()
+    ) {
         id = state.getId(file.getFilePath());
     }
     return { $ref: `${id}#/definitions/${defNames.join('/')}` };
