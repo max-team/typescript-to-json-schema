@@ -180,7 +180,7 @@ function getTypeReferenceSchema(node: TypeReferenceNode, sourceFile: SourceFile,
     }
     if (['Pick', 'Omit'].includes(name)) {
         const schema = processInterface(
-            (typeArgs[0] as TypeReferenceNode).getTypeName().getSymbol().getDeclarations()[0] as InterfaceDeclaration,
+            getInterface(typeArgs[0] as TypeReferenceNode),
             sourceFile,
             state
         ) as Schema;
@@ -198,7 +198,7 @@ function getTypeReferenceSchema(node: TypeReferenceNode, sourceFile: SourceFile,
     // 视为泛型
     if (typeArgs.length > 0) {
         const typeMaps = typeArgs.map(typeNode => getTypeNodeSchema(typeNode, sourceFile, state));
-        const genDec = (node as TypeReferenceNode).getTypeName().getSymbol().getDeclarations()[0] as InterfaceDeclaration;
+        const genDec = getInterface(node as TypeReferenceNode);
         const relMap = genDec.getTypeParameters().reduce((prev, typeNode, idx) => {
             prev[`#/definitions/${typeNode.getName().toLowerCase()}`] = typeMaps[idx];
             return prev;
@@ -217,6 +217,15 @@ function getTypeReferenceSchema(node: TypeReferenceNode, sourceFile: SourceFile,
     }
 
     return getRef((node as TypeReferenceNode).getTypeName() as Identifier, sourceFile, state);
+}
+
+function getInterface(typeRefNode: TypeReferenceNode): InterfaceDeclaration {
+    const nodeDel = typeRefNode.getTypeName().getSymbol().getDeclarations()[0];
+    if (nodeDel.getKind() === ts.SyntaxKind.ImportSpecifier) {
+        const sourceFile = (nodeDel as ImportSpecifier).getImportDeclaration().getModuleSpecifierSourceFile();
+        return sourceFile.getInterface((nodeDel as InterfaceDeclaration).getName());
+    }
+    return nodeDel as InterfaceDeclaration;
 }
 
 function getTagValue(tag, type: 'string' | 'number' | 'boolean'): boolean | number | string | {$data: string}  {

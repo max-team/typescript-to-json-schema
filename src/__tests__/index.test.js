@@ -184,6 +184,52 @@ describe('typescript-json-schema', () => {
         });
     });
 
+    it('Generic', function () {
+        const {inner, outer, outerRename} = support.definitions.generictest.properties;
+        expect(inner).toEqual({
+            type: 'object',
+            properties: {
+                data: {
+                    $ref: '#/definitions/testvalue'
+                },
+                type: {
+                    type: 'string'
+                }
+            },
+            required: ['data', 'type']
+        });
+        expect(outer).toEqual({
+            type: 'object',
+            properties: {
+                name: {
+                    type: 'string'
+                },
+                data: {
+                    $ref: '#/definitions/testvalue'
+                },
+                type: {
+                    enum: ['0', '1']
+                }
+            },
+            required: ['name', 'data', 'type']
+        });
+        expect(outerRename).toEqual({
+            type: 'object',
+            properties: {
+                rename: {
+                    type: 'string'
+                },
+                data: {
+                    $ref: '#/definitions/testvalue'
+                },
+                type: {
+                    enum: ['0', '1']
+                }
+            },
+            required: ['rename', 'data', 'type']
+        });
+    });
+
     it('namespace', function () {
         const {testnamespace, emptynamespace} = namespace.definitions;
         expect(testnamespace).toEqual({

@@ -1,3 +1,4 @@
+import {GenericDataOuter, GenericDataReName as GenericDataRename} from './base';
 
 interface TestValue {
     test: string;
@@ -35,5 +36,6 @@ interface GenericData<T, K> {
 
 interface GenericTest {
     inner: GenericData<string, TestValue>;
-    outer: GenericData<'0' | '1', TestValue>;
+    outer: GenericDataOuter<'0' | '1', TestValue>;
+    outerRename: GenericDataRename<'0' | '1', TestValue>;
 }
