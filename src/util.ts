@@ -26,6 +26,7 @@ import {
     ImportSpecifier
 } from "ts-morph";
 
+import chalk from 'chalk';
 import { omit, pick } from 'lodash';
 import traverse from 'json-schema-traverse';
 
@@ -308,7 +309,15 @@ export function getProperties (node: InterfaceDeclaration | TypeLiteralNode, sou
         if ('ignore' in tags) {
             return prev;
         }
-        const typeSchema = getTypeNodeSchema(typeNode, sourceFile, state);
+        let typeSchema = null;
+        try {
+            typeSchema = getTypeNodeSchema(typeNode, sourceFile, state);
+        } catch(err) {
+            const {line, column} = sourceFile.getLineAndColumnAtPos(typeNode.getStart());
+            const msg = 'Get schema failed! Ignore this property.';
+            console.log(`${chalk.yellow('WARNING')} ${sourceFile.getFilePath()}\n${chalk.cyan(`line ${line}, col ${column}`)} ${msg}`);
+            return prev;
+        }
         const schema = {
             ...mergeTags(typeSchema, tags),
             description: getDescription(property)
@@ -356,8 +365,7 @@ export function getRef (identifier: Identifier, sourceFile: SourceFile, state: C
         return prev;
     }, []);
     let id = '';
-    if (defArr.length === 1
-        && identifier.getDefinitions()[0].getKind() !== ts.ScriptElementKind.typeParameterElement
+    if (!(defArr.length === 1 && identifier.getDefinitions()[0].getKind() === ts.ScriptElementKind.typeParameterElement)
         && file.getFilePath() !== sourceFile.getFilePath()
     ) {
         id = state.getId(file.getFilePath());

@@ -10,3 +10,7 @@ export interface GenericDataReName<T, K> {
     data: K;
     type: T;
 }
+
+interface Test {
+    a: Date;
+}
