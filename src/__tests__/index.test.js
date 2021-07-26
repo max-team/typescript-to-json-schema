@@ -310,4 +310,17 @@ describe('typescript-json-schema', () => {
         expect(result.a.allOf.length).toEqual(1);
 
     });
+
+    it('merge Generic', function () {
+        const result = mergeSchemas({
+            test: {
+                $ref: '#/definitions/generictest',
+                definitions: support.definitions
+            }
+        }, {
+            mergeAllOf: true
+        });
+        
+        expect(result.test.properties).toBeDefined();
+    });
 });

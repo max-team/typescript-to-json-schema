@@ -42,10 +42,10 @@ function getDefinitions(sourceFile: SourceFile, state: CompilerState, namespace?
 
     const interfaces = source.getInterfaces();
     definitions = interfaces.reduce(
-        (prev, node) => ({
+        (prev, node) => node.getTypeParameters().length > 0 ? prev : {
             ...prev,
             [node.getName().toLowerCase()]: processInterface(node, sourceFile, state)
-        }),
+        },
         definitions
     );
 
