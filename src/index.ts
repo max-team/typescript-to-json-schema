@@ -6,12 +6,13 @@
 import { Project, SourceFile, ModuleDeclaration } from 'ts-morph';
 import { basename } from 'path';
 
-import { isPlainObject, get, omit, uniq, isArray } from 'lodash';
+import { isPlainObject, get, omit, isArray } from 'lodash';
 
 import {
     processInterface,
     processTypeAlias,
     processEnum,
+    mergeSchema,
     Schema,
     PropIterator,
     CompilerState
@@ -147,26 +148,6 @@ export function mergeSchemas(schemas: SchemaList, options: { mergeAnyOf?: boolea
         mergeAllOf = true
     } = options;
 
-    function mergeSchema(a: Schema, b: Schema): Schema {
-        const ret = {...a, ...b};
-        if (!b) {
-            return ret;
-        }
-        if (a.type === 'object' || b.type === 'object') {
-            ret.properties = {
-                ...a.properties,
-                ...b.properties
-            };
-            b.properties && a.properties && Object.keys(a.properties).forEach(key => {
-                if (b.properties[key]) {
-                    ret.properties[key] = mergeSchema(a.properties[key], b.properties[key]);
-                }
-            });
-            ret.required = uniq([...(a.required || []), ...(b.required || [])]);
-        }
-        return ret;
-    }
-
     function getSchema(ref: string, id: string, schemas: SchemaList) {
         let [refId, pointer] = ref.split('#/');
         refId = refId || id;
@@ -241,3 +222,7 @@ export function mergeSchemas(schemas: SchemaList, options: { mergeAnyOf?: boolea
 
     return ret;
 }
+
+export { Schema, PropContext } from './util';
+export * from './translate/types';
+export { Translate } from './translate';

@@ -27,7 +27,7 @@ import {
 } from "ts-morph";
 
 import chalk from 'chalk';
-import { omit, pick } from 'lodash';
+import { omit, pick, uniq } from 'lodash';
 import traverse from 'json-schema-traverse';
 
 const buildTypes = new Set(['integer', 'numberic']);
@@ -85,7 +85,7 @@ export function getRequired (node: InterfaceDeclaration | TypeLiteralNode): stri
     }
 }
 
-const getLiteralTypeValue = (node: LiteralTypeNode) => {
+export const getLiteralTypeValue = (node: LiteralTypeNode) => {
     const text = node.getText();
     return JSON.parse(/^'/.test(text) ? text.replace(/"/g, '\\"').replace(/(^'|'$)/g, '"').replace(/\\'/g, '\'') : text);
 };
@@ -181,7 +181,7 @@ function getTypeReferenceSchema(node: TypeReferenceNode, sourceFile: SourceFile,
     }
     if (['Pick', 'Omit'].includes(name)) {
         const schema = processInterface(
-            getInterface(typeArgs[0] as TypeReferenceNode),
+            getInterface((typeArgs[0] as TypeReferenceNode).getTypeName() as Identifier),
             sourceFile,
             state
         ) as Schema;
@@ -199,7 +199,7 @@ function getTypeReferenceSchema(node: TypeReferenceNode, sourceFile: SourceFile,
     // 视为泛型
     if (typeArgs.length > 0) {
         const typeMaps = typeArgs.map(typeNode => getTypeNodeSchema(typeNode, sourceFile, state));
-        const genDec = getInterface(node as TypeReferenceNode);
+        const genDec = getInterface((node as TypeReferenceNode).getTypeName() as Identifier);
         const relMap = genDec.getTypeParameters().reduce((prev, typeNode, idx) => {
             prev[`#/definitions/${typeNode.getName().toLowerCase()}`] = typeMaps[idx];
             return prev;
@@ -220,13 +220,13 @@ function getTypeReferenceSchema(node: TypeReferenceNode, sourceFile: SourceFile,
     return getRef((node as TypeReferenceNode).getTypeName() as Identifier, sourceFile, state);
 }
 
-function getInterface(typeRefNode: TypeReferenceNode): InterfaceDeclaration {
-    const nodeDel = typeRefNode.getTypeName().getSymbol().getDeclarations()[0];
-    if (nodeDel.getKind() === ts.SyntaxKind.ImportSpecifier) {
-        const sourceFile = (nodeDel as ImportSpecifier).getImportDeclaration().getModuleSpecifierSourceFile();
-        return sourceFile.getInterface((nodeDel as InterfaceDeclaration).getName());
+export function getInterface(identifier: Identifier): InterfaceDeclaration {
+    const nodeDecl = identifier.getSymbol().getDeclarations()[0];
+    if (nodeDecl.getKind() === ts.SyntaxKind.ImportSpecifier) {
+        const sourceFile = (nodeDecl as ImportSpecifier).getImportDeclaration().getModuleSpecifierSourceFile();
+        return sourceFile.getInterface((nodeDecl as InterfaceDeclaration).getName());
     }
-    return nodeDel as InterfaceDeclaration;
+    return nodeDecl as InterfaceDeclaration;
 }
 
 function getTagValue(tag, type: 'string' | 'number' | 'boolean'): boolean | number | string | {$data: string}  {
@@ -244,7 +244,7 @@ function getTagValue(tag, type: 'string' | 'number' | 'boolean'): boolean | numb
     return tag;
 }
 
-function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} = {}): object {
+export function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} = {}): object {
     const mergedSchema = { ...schema };
     if (mergedSchema.oneOf) {
         mergedSchema.oneOf = mergedSchema.oneOf.map(s => mergeTags(s, tags));
@@ -253,7 +253,7 @@ function mergeTags (schema?: {[name: string]: any}, tags: {[name: string]: any} 
         mergedSchema.allOf = mergedSchema.allOf.map(s => mergeTags(s, tags));
     }
     const changeAttrs = ['default', 'example'];
-    const numberAttrs = ['minItems', 'maxItems', 'minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum', 'minLength', 'maxLength'];
+    const numberAttrs = ['minItems', 'maxItems', 'minimum', 'exclusiveMinimum', 'maximum', 'exclusiveMaximum', 'minLength', 'maxLength', 'multipleOf'];
     const booleanAttrs = ['uniqueItems', 'flatten'];
     if (['integer', 'number'].indexOf(mergedSchema.type) >= 0) {
         changeAttrs.forEach(name => {
@@ -373,7 +373,7 @@ export function getRef (identifier: Identifier, sourceFile: SourceFile, state: C
     return { $ref: `${id}#/definitions/${defNames.join('/')}` };
 }
 
-function getJsDocTags(node: JSDocableNode) {
+export function getJsDocTags(node: JSDocableNode) {
     return node.getJsDocs().reduce((prev, jsdoc) => {
         return {
             ...prev,
@@ -427,4 +427,24 @@ export function processEnum (node: EnumDeclaration) {
         enum: node.getMembers().map(member => member.getValue()),
         description: getDescription(node)
     };
+}
+
+export function mergeSchema(a: Schema, b: Schema): Schema {
+    const ret = {...a, ...b};
+    if (!b) {
+        return ret;
+    }
+    if (a.type === 'object' || b.type === 'object') {
+        ret.properties = {
+            ...a.properties,
+            ...b.properties
+        };
+        b.properties && a.properties && Object.keys(a.properties).forEach(key => {
+            if (b.properties[key]) {
+                ret.properties[key] = mergeSchema(a.properties[key], b.properties[key]);
+            }
+        });
+        ret.required = uniq([...(a.required || []), ...(b.required || [])]);
+    }
+    return ret;
 }
