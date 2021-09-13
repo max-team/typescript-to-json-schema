@@ -1,6 +1,6 @@
 {
   "name": "@hoth/typescript-to-json-schema",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "typescript to json-schema transpiler",
   "keywords": [
     "typescript",
