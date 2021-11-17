@@ -17,10 +17,16 @@ export interface EntryNode {
     nodeName: string;
 }
 
+class GenPlugin {
+    traverse?: (ctx: PropContext, schema: Schema) => void;
+    complete?: (schema: Schema) => void;
+}
+
 export interface GenOption {
     globalFiles?: string[];
     beforePropMount?: PropIterator;
     afterPropMount?: (ctx: PropContext, schema: Schema) => void;
+    plugins?: GenPlugin[];
 }
 
 export interface TansNode {

@@ -93,10 +93,14 @@ export class Translate {
             definitions
         };
 
-        return {
+        schema = {
             '$schema': 'http://json-schema.org/draft-07/schema#',
             ...mergeAnyOf(schema)
         };
+
+        opts?.plugins && opts?.plugins.forEach(plugin => plugin.complete && plugin.complete(schema));
+
+        return schema;
     }
 
     mergeDefinitions(schema: CompositionSchema): CompositionSchema {

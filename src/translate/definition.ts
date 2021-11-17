@@ -184,26 +184,21 @@ export class Definition {
                 Object.assign(typeSchema, { description });
             }
             
-            const {beforePropMount, afterPropMount} = this.state;
+            const {beforePropMount, afterPropMount, plugins} = this.state;
+            const propContext = {
+                property,
+                typeNode,
+                interface: node as InterfaceDeclaration,
+                sourceFile
+            };
             if (beforePropMount) {
-                const {ignore} = beforePropMount({
-                    property,
-                    typeNode,
-                    interface: node as InterfaceDeclaration,
-                    sourceFile
-                }, schema) || {};
+                const {ignore} = beforePropMount(propContext, schema) || {};
                 if (ignore) {
                     return prev;
                 }
             }
-            if (afterPropMount) {
-                afterPropMount({
-                    property,
-                    typeNode,
-                    interface: node as InterfaceDeclaration,
-                    sourceFile
-                }, schema);
-            }
+            afterPropMount && afterPropMount(propContext, schema);
+            plugins && plugins.forEach(plugin => plugin.traverse && plugin.traverse(propContext, {...schema}));
 
             return {
                 ...prev,
