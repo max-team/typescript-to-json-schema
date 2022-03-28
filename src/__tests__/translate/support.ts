@@ -118,3 +118,7 @@ interface NameSpaceSupport {
     a: TestNameSpace.Fooz;
     b: TestNameSpace.InnerSpace.InnerFooz;
 }
+
+export default interface DefaultExport {
+    c: string;
+}

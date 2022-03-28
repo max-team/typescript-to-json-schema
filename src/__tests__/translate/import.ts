@@ -1,4 +1,4 @@
-import {ValEnum, Foo, Simple, TestNameSpace} from './support';
+import DefaultExport, {ValEnum, Foo, Simple, TestNameSpace} from './support';
 
 interface ImportSupport {
     a: ValEnum;
@@ -6,4 +6,5 @@ interface ImportSupport {
     c: Simple;
     d: TestNameSpace.Fooz;
     e: TestNameSpace.InnerSpace.InnerFooz;
+    f: DefaultExport;
 }

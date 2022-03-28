@@ -107,6 +107,7 @@ export class Definition {
         const declaration = identifier.getSymbol().getDeclarations()[0];
         switch (declaration.getKind()) {
             // 外部导入类型
+            case ts.SyntaxKind.ImportClause:
             case ts.SyntaxKind.ImportSpecifier: {
                 const sourceFile = identifier.getDefinitions()[0].getSourceFile();
                 const node = this.getSourceFileNode(sourceFile, identifier.getText());
